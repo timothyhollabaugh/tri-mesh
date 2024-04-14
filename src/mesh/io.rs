@@ -8,10 +8,13 @@ impl Mesh {
     ///
     /// # Examples
     /// ```no_run
-    /// # use tri_mesh::*;
-    /// let model: three_d_asset::Model =
+    /// use tri_mesh::*;
+    /// let mut model: three_d_asset::Model =
     ///     three_d_asset::io::load_and_deserialize("cube.obj").expect("Failed loading asset");
-    /// let mesh = Mesh::new(&model.geometries[0]);
+    ///
+    /// let primative = model.geometries.remove(0);
+    /// let three_d_asset::Geometry::Triangles(trimesh) = primative.geometry else { panic!("Geometry is not a mesh") };
+    /// let mesh = Mesh::new(&trimesh);
     /// ```
     ///
     /// ```
@@ -161,7 +164,7 @@ impl From<&Mesh> for three_d_asset::TriMesh {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use three_d_asset::{Positions, TriMesh};
+    use three_d_asset::{Geometry, Positions, TriMesh};
 
     #[test]
     fn test_from_obj() {
@@ -190,7 +193,10 @@ mod tests {
         let mut raw_assets = three_d_asset::io::RawAssets::new();
         raw_assets.insert("cube.obj", source);
         let mut model: three_d_asset::Model = raw_assets.deserialize(".obj").unwrap();
-        let mesh: Mesh = model.geometries.remove(0).into();
+        let primative = model.geometries.remove(0);
+        let Geometry::Triangles(trimesh) = primative.geometry else { panic!("Geometry is not a mesh") };
+        let mesh = Mesh::new(&trimesh);
+        //let mesh: Mesh = model.geometries.remove(0).into();
         assert_eq!(mesh.no_faces(), 12);
         assert_eq!(mesh.no_vertices(), 8);
         mesh.is_valid().unwrap();

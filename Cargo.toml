@@ -16,7 +16,7 @@ default = []
 
 [dependencies]
 cgmath = "0.18"
-three-d-asset = "0.5"
+three-d-asset = "0.7"
 thiserror = "1.0"
 
 [dev-dependencies]
