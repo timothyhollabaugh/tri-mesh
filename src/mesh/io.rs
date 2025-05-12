@@ -193,17 +193,10 @@ mod tests {
         let mut raw_assets = three_d_asset::io::RawAssets::new();
         raw_assets.insert("cube.obj", source);
         let mut model: three_d_asset::Model = raw_assets.deserialize(".obj").unwrap();
-<<<<<<< HEAD
-        let primative = model.geometries.remove(0);
-        let Geometry::Triangles(trimesh) = primative.geometry else { panic!("Geometry is not a mesh") };
-        let mesh = Mesh::new(&trimesh);
-        //let mesh: Mesh = model.geometries.remove(0).into();
-=======
         let three_d_asset::Geometry::Triangles(m) = model.geometries.remove(0).geometry else {
             unreachable!()
         };
         let mesh: Mesh = m.into();
->>>>>>> master
         assert_eq!(mesh.no_faces(), 12);
         assert_eq!(mesh.no_vertices(), 8);
         mesh.is_valid().unwrap();
