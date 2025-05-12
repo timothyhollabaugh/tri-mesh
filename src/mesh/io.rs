@@ -11,10 +11,10 @@ impl Mesh {
     /// use tri_mesh::*;
     /// let mut model: three_d_asset::Model =
     ///     three_d_asset::io::load_and_deserialize("cube.obj").expect("Failed loading asset");
-    ///
-    /// let primative = model.geometries.remove(0);
-    /// let three_d_asset::Geometry::Triangles(trimesh) = primative.geometry else { panic!("Geometry is not a mesh") };
-    /// let mesh = Mesh::new(&trimesh);
+    /// let mesh = match &model.geometries[0].geometry {
+    ///     three_d_asset::Geometry::Triangles(mesh) => Mesh::new(mesh),
+    ///     _ => panic!("Geometry is not a triangle mesh")
+    /// };
     /// ```
     ///
     /// ```
@@ -193,10 +193,17 @@ mod tests {
         let mut raw_assets = three_d_asset::io::RawAssets::new();
         raw_assets.insert("cube.obj", source);
         let mut model: three_d_asset::Model = raw_assets.deserialize(".obj").unwrap();
+<<<<<<< HEAD
         let primative = model.geometries.remove(0);
         let Geometry::Triangles(trimesh) = primative.geometry else { panic!("Geometry is not a mesh") };
         let mesh = Mesh::new(&trimesh);
         //let mesh: Mesh = model.geometries.remove(0).into();
+=======
+        let three_d_asset::Geometry::Triangles(m) = model.geometries.remove(0).geometry else {
+            unreachable!()
+        };
+        let mesh: Mesh = m.into();
+>>>>>>> master
         assert_eq!(mesh.no_faces(), 12);
         assert_eq!(mesh.no_vertices(), 8);
         mesh.is_valid().unwrap();

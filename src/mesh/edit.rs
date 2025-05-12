@@ -332,28 +332,59 @@ impl Mesh {
 
     ///
     /// Adds a face to the mesh and connects it to the given vertices which can be created using the [Mesh::add_vertex] method.
-    /// Also creates edges between the vertices if they do not already exist.
+    /// Also creates edges between the vertices if they do not already exist. Returns an error if the action results in a non-manifold mesh.
     ///
     pub fn add_face(
         &mut self,
         vertex_id1: VertexID,
         vertex_id2: VertexID,
         vertex_id3: VertexID,
-    ) -> FaceID {
+    ) -> Result<FaceID, Error> {
+        let edges = [
+            self.connecting_edge(vertex_id1, vertex_id2),
+            self.connecting_edge(vertex_id2, vertex_id3),
+            self.connecting_edge(vertex_id3, vertex_id1),
+        ];
+
+        for edge in edges {
+            if let Some(edge) = edge {
+                if self.walker_from_halfedge(edge).face_id().is_some() {
+                    return Err(Error::ActionWillResultInNonManifoldMesh(
+                        "add_face".to_string(),
+                    ));
+                }
+            }
+        }
+
         let face_id = self
             .connectivity_info
             .create_face(vertex_id1, vertex_id2, vertex_id3);
-        for halfedge in self.halfedge_iter() {
-            let walker = self.walker_from_halfedge(halfedge);
-            let new_halfedge = self.connectivity_info.new_halfedge(
-                walker.into_next().into_next().vertex_id(),
-                None,
-                None,
-            );
-            self.connectivity_info
-                .set_halfedge_twin(new_halfedge, halfedge);
+
+        for halfedge in self.face_halfedge_iter(face_id) {
+            let target_vertex = self.walker_from_halfedge(halfedge).vertex_id().unwrap();
+            let i = if target_vertex == vertex_id2 {
+                0
+            } else if target_vertex == vertex_id3 {
+                1
+            } else {
+                2
+            };
+            let twin = if let Some(old_halfedge) = edges[i] {
+                let twin = self.walker_from_halfedge(old_halfedge).twin_id().unwrap();
+                self.connectivity_info.remove_halfedge(old_halfedge);
+                twin
+            } else {
+                let walker = self.walker_from_halfedge(halfedge);
+                let new_halfedge = self.connectivity_info.new_halfedge(
+                    walker.into_next().into_next().vertex_id(),
+                    None,
+                    None,
+                );
+                new_halfedge
+            };
+            self.connectivity_info.set_halfedge_twin(twin, halfedge);
         }
-        face_id
+        Ok(face_id)
     }
 
     ///
@@ -776,5 +807,27 @@ mod tests {
         assert_eq!(10, mesh.no_halfedges());
         assert_eq!(2, mesh.no_faces());
         mesh.is_valid().unwrap();
+    }
+
+    #[test]
+    fn test_add_face() {
+        let mut mesh = Mesh::new(&three_d_asset::TriMesh::default());
+        for i in 0..3 {
+            let vertex_id1 = mesh.add_vertex(vec3(1.0, i as f64, 0.0));
+            let vertex_id2 = mesh.add_vertex(vec3(0.0, i as f64, 0.0));
+            let vertex_id3 = mesh.add_vertex(vec3(0.0, i as f64, 1.0));
+            mesh.add_face(vertex_id1, vertex_id2, vertex_id3).unwrap();
+            let vertex_id4 = mesh.add_vertex(vec3(1.0, i as f64, 1.0));
+            mesh.add_face(vertex_id1, vertex_id3, vertex_id4).unwrap();
+            let vertex_id5 = mesh.add_vertex(vec3(2.0, i as f64, 2.0));
+            assert!(mesh.add_face(vertex_id1, vertex_id5, vertex_id4).is_err());
+            mesh.add_face(vertex_id1, vertex_id4, vertex_id5).unwrap();
+        }
+
+        assert_eq!(mesh.no_vertices(), 15);
+        assert_eq!(mesh.no_edges(), 21);
+        assert_eq!(mesh.no_halfedges(), 42);
+        assert_eq!(mesh.no_faces(), 9);
+        mesh.is_valid().unwrap()
     }
 }
