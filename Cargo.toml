@@ -16,8 +16,9 @@ default = []
 
 [dependencies]
 cgmath = "0.18"
-three-d-asset = "0.7"
-thiserror = "1.0"
+three-d-asset = "0.9"
+thiserror = "2.0"
 
 [dev-dependencies]
-three-d-asset = {version="0.7", features = ["obj"] }
+three-d-asset = {version="0.9", features = ["obj"] }
+
